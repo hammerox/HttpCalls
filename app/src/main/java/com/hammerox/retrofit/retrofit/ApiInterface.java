@@ -1,5 +1,7 @@
 package com.hammerox.retrofit.retrofit;
 
+import com.hammerox.retrofit.utils.SignIn;
+
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
@@ -11,6 +13,6 @@ import retrofit2.http.Query;
 public interface ApiInterface {
 
     @GET("?action=person.signIn")
-    public Call<SignIn> signIn(@Query("username") String username,
-                               @Query("password") String password);
+    Call<SignIn> signIn(@Query("username") String username,
+                        @Query("password") String password);
 }

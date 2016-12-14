@@ -1,4 +1,4 @@
-package com.hammerox.retrofit.retrofit;
+package com.hammerox.retrofit.utils;
 
 import java.util.HashMap;
 import java.util.Map;
