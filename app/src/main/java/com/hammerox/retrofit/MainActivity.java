@@ -1,5 +1,6 @@
 package com.hammerox.retrofit;
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -10,6 +11,13 @@ import android.widget.TextView;
 import com.hammerox.retrofit.retrofit.ApiInterface;
 import com.hammerox.retrofit.retrofit.SignIn;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -18,7 +26,9 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static final String BASE_URL = "https://inevent.us/api/";
+    public final static String BASE_URL = "https://inevent.us/api/";
+    private final static String LOADING = "Loading...";
+    private final static String ERROR = "Error!";
 
     EditText mLoginView;
     EditText mPasswordView;
@@ -49,13 +59,47 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void okhttp(View view) {
+        mOkHttpTextView.setText(LOADING);
         getTextFromViews();
 
+        Uri url = Uri.parse(BASE_URL).buildUpon()
+                .appendQueryParameter("action", "person.signIn")
+                .appendQueryParameter("username", mLogin)
+                .appendQueryParameter("password", mPassword).build();
+
+        Request request = new Request.Builder()
+                .url(url.toString())
+                .build();
+
+        OkHttpClient client = new OkHttpClient();
+
+
+        client.newCall(request).enqueue(new okhttp3.Callback() {
+            @Override
+            public void onFailure(okhttp3.Call call, IOException e) {
+                mOkHttpTextView.setText(ERROR);
+            }
+
+            @Override
+            public void onResponse(okhttp3.Call call, okhttp3.Response response) throws IOException {
+                String json = response.body().string();
+                String token = getTokenFromJson(json);
+                final String text = (token != null) ? token : ERROR;
+
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mOkHttpTextView.setText(text);
+                    }
+                });
+
+            }
+        });
     }
 
 
     public void retrofit(View view) {
-        mRetrofitTextView.setText("Loading...");
+        mRetrofitTextView.setText(LOADING);
         getTextFromViews();
 
         Retrofit retrofit = new Retrofit.Builder()
@@ -72,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<SignIn> call, Throwable t) {
-                mRetrofitTextView.setText("Error");
+                mRetrofitTextView.setText(ERROR);
             }
         });
     }
@@ -81,6 +125,19 @@ public class MainActivity extends AppCompatActivity {
     public void getTextFromViews() {
         mLogin = mLoginView.getText().toString();
         mPassword = mPasswordView.getText().toString();
+    }
+
+    private String getTokenFromJson(String jsonString) {
+        String token;
+        try {
+            JSONObject json = new JSONObject(jsonString);
+            JSONObject person = json.getJSONArray("data").getJSONObject(0);
+            token = person.getString("tokenID");
+        } catch (JSONException e) {
+            e.printStackTrace();
+            token = null;
+        }
+        return token;
     }
 
 }
